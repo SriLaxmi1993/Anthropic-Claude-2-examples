@@ -4,12 +4,13 @@ from rich import print
 import re
 import os
 
-
 # Initialize Anthropic client
 # Access API key from environment variable
 api_key = os.getenv('ANTHROPIC_API_KEY')
 client = Anthropic(api_key=api_key)
 MODEL_NAME = "claude-3-opus-20240229"
+
+# create a messgae for anthropic model
 
 stock_message = {
     "role": "user", 
@@ -23,7 +24,9 @@ message = client.messages.create(
 ).content[0].text
 print("##### Before Function Calling ####\n\n" + message)
 
-# 1. Define the stock price finding function 
+
+# Define the stock price finding function 
+
 def get_stock_price(ticker_symbol):
     stock = yf.Ticker(ticker_symbol)
     hist = stock.history(period="1d")
@@ -31,6 +34,7 @@ def get_stock_price(ticker_symbol):
     return current_price
 
 # 2. Construct Tool description
+
 tool_description = """
 <tool_description>
     <tool_name>get_stock_price</tool_name>
@@ -47,7 +51,9 @@ tool_description = """
 </tool_description>
 """
 
-# 3. Ask Claude
+
+
+# 3. Ask Claude with a sytem prompt and a tool. Another message is created and sent to the Anthropic model, this time including the system prompt which describes the available tools.
 system_prompt = f"""
 In this environment you have access to a set of tools you can use to answer the 
 user's question.
@@ -74,9 +80,9 @@ function_calling_message = client.messages.create(
     system=system_prompt
 ).content[0].text
 
-# print(function_calling_message)
 
 # 4. Extract parameters from response & call the function ( converting xml format )
+
 def extract_between_tags(tag, string, strip=False):
     ext_list = re.findall(f"<{tag}>(.+?)</{tag}>", string, re.DOTALL)
     return [e.strip() for e in ext_list] if strip else ext_list
@@ -88,7 +94,9 @@ names_to_functions = {
 }
 price = names_to_functions[function_name](**function_params)
 
-# Construct function results
+
+# Construct function results and send back to Claude
+
 function_results = f"""
 <function_results>
   <result>
